@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">HalalBites</string>
+    <string name="title_home">Home</string>
+    <string name="title_delivery">Delivery</string>
+    <string name="title_scanner">Scanner</string>
+
+</resources>
