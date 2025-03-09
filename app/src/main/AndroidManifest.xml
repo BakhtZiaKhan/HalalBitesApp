@@ -8,7 +8,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -18,12 +17,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.HalalBites"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
-        <!-- Add your Google Maps and Places API key -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCym8qS83CDhwqncpPCZBtUc9YYlpmM54M" />
+        <!-- ✅ Remove hardcoded API key from manifest -->
+        <!-- ✅ Ensure API key is loaded from BuildConfig in MainActivity -->
 
         <!-- MainActivity declaration -->
         <activity
@@ -36,7 +34,13 @@
             </intent-filter>
         </activity>
 
-        <!-- Service metadata for fused location provider -->
+        <!-- SignInActivity declaration -->
+        <activity
+            android:name=".ui.Signin.SignInActivity"
+            android:exported="true"
+            android:label="@string/title_sign_in" />
+
+        <!-- Google Play Services metadata -->
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />

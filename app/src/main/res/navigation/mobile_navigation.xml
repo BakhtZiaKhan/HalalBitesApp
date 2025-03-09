@@ -22,4 +22,11 @@
         android:name="com.example.halalbites.ui.Scanner.ScannerFragment"
         android:label="@string/title_scanner"
         tools:layout="@layout/fragment_scanner" />
+
+    <fragment
+        android:id="@+id/navigation_register"
+        android:name="com.example.halalbites.ui.Register.RegisterFragment"
+        android:label="Register"
+        tools:layout="@layout/fragment_register" />
+
 </navigation>

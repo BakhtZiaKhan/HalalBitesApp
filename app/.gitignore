@@ -1,1 +1,14 @@
 /build
+
+# Ignore assets folder
+app/src/main/assets/
+
+# Ignore build & IDE files
+/.idea/
+/build/
+/*.iml
+/.gradle/
+/*.apk
+
+# Ignore secrets file
+../secrets.properties

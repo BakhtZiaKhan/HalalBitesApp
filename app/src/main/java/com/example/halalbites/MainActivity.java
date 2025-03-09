@@ -2,36 +2,41 @@ package com.example.halalbites;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.ImageView;
 import android.widget.Toast;
-import android.widget.Button;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+
 import com.example.halalbites.databinding.ActivityMainBinding;
+import com.example.halalbites.ui.Register.RegisterFragment;
+import com.example.halalbites.ui.Signin.SignInActivity;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.net.PlacesClient;
-import com.google.android.libraries.places.widget.Autocomplete;
-import com.google.android.libraries.places.widget.AutocompleteActivity;
-import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.gms.common.api.Status;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
-    private static final int AUTOCOMPLETE_REQUEST_CODE = 1; // Request code for Autocomplete widget
+    private PlacesClient placesClient; // Places API Client
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Using ViewBinding to inflate the layout
+        // Initialize ViewBinding
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -39,93 +44,125 @@ public class MainActivity extends AppCompatActivity {
         initializePlacesSDK();
 
         // Set up the Toolbar
-        Toolbar toolbar = binding.toolbar; // Use binding to access the toolbar
+        Toolbar toolbar = binding.toolbar;
         setSupportActionBar(toolbar);
 
-        // Find the BottomNavigationView
+        // Set up Profile Icon Click Listener
+        ImageView profileImage = toolbar.findViewById(R.id.profile_image);
+        profileImage.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SignInActivity.class);
+            startActivity(intent);
+        });
+
+        // Set up Google Places Autocomplete Search Bar
+        setupPlacesAutocomplete();
+
+        // Set up BottomNavigationView and NavController
+        setupNavigation();
+
+        // Handle Intent if coming from SignInActivity
+        handleIntent();
+    }
+
+    /**
+     * Handles the Intent from SignInActivity to navigate to RegisterFragment
+     */
+    private void handleIntent() {
+        if (getIntent().getBooleanExtra("navigateToRegister", false)) {
+            getIntent().removeExtra("navigateToRegister"); // Remove the flag to avoid re-triggering
+
+            // Navigate to RegisterFragment
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.nav_host_fragment_activity_main, new RegisterFragment())
+                    .addToBackStack(null)
+                    .commit();
+        }
+    }
+
+    /**
+     * Initializes the Google Places SDK securely using BuildConfig.
+     */
+    private void initializePlacesSDK() {
+        if (!Places.isInitialized()) {
+            // Securely retrieve the API Key from BuildConfig
+            Places.initialize(getApplicationContext(), BuildConfig.GOOGLE_MAPS_API_KEY);
+        }
+        placesClient = Places.createClient(this);
+    }
+
+    /**
+     * Sets up the Google Places Autocomplete Fragment without duplicates.
+     */
+    private void setupPlacesAutocomplete() {
+        // Get reference to the existing AutocompleteSupportFragment from XML
+        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
+                getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+        if (autocompleteFragment != null) {
+            // Ensure the fragment view exists before setting properties
+            if (autocompleteFragment.getView() == null) {
+                Log.e("Places", "Autocomplete fragment view is null. It may not be attached yet.");
+                return;
+            }
+
+            // Prevent duplicate setup by clearing previous listeners
+            autocompleteFragment.setOnPlaceSelectedListener(null);
+
+            // Set hint to differentiate this search bar
+            autocompleteFragment.setHint("Search for a place");
+
+            // Define the place fields you want
+            autocompleteFragment.setPlaceFields(Arrays.asList(
+                    Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG));
+
+            // Set up a listener for the selected place
+            autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+                @Override
+                public void onPlaceSelected(@NonNull Place place) {
+                    Toast.makeText(MainActivity.this,
+                            "Selected: " + place.getName(),
+                            Toast.LENGTH_LONG).show();
+                    Log.i("Places", "Place selected: " + place.getName() + " - " + place.getAddress());
+                }
+
+                @Override
+                public void onError(@NonNull Status status) {
+                    Log.e("Places", "Error selecting place: " + status.getStatusMessage());
+                }
+            });
+
+        } else {
+            Log.e("Places", "Autocomplete fragment is NULL. Check activity_main.xml.");
+        }
+    }
+
+    /**
+     * Sets up the BottomNavigationView and links it with the NavController.
+     */
+    private void setupNavigation() {
         BottomNavigationView navView = binding.navView;
 
-        // Find the NavHostFragment
+        // Get NavHostFragment and NavController
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment_activity_main);
 
-        // Ensure the NavHostFragment is not null
         if (navHostFragment == null) {
             throw new IllegalStateException("NavHostFragment not found. Check your layout XML.");
         }
 
-        // Retrieve the NavController from the NavHostFragment
         NavController navController = navHostFragment.getNavController();
 
-        // Set up the AppBarConfiguration to include the top-level destinations
+        // Configure top-level destinations
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.navigation_home, R.id.navigation_delivery, R.id.navigation_scanner)
                 .build();
 
-        // Set up ActionBar with NavController for back navigation support
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
-        // Link the BottomNavigationView with the NavController
+        // Link BottomNavigationView with NavController
         NavigationUI.setupWithNavController(navView, navController);
-
-
-    }
-
-    /**
-     * Initializes the Google Places SDK with the API key.
-     */
-    private void initializePlacesSDK() {
-        // Replace "YOUR_API_KEY" with your actual API key
-        String apiKey = "AIzaSyCym8qS83CDhwqncpPCZBtUc9YYlpmM54M";
-
-        if (!Places.isInitialized()) {
-            Places.initialize(getApplicationContext(), apiKey);
-        }
-
-        // Create a PlacesClient instance
-        PlacesClient placesClient = Places.createClient(this);
-    }
-
-    /**
-     * Launches the Google Places Autocomplete Widget.
-     */
-    private void launchAutocompleteWidget() {
-        // Define the fields to retrieve
-        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS);
-
-        // Build the intent to launch the Autocomplete widget
-        Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields)
-                .build(this);
-
-        // Start the activity for result
-        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
-    }
-
-    /**
-     * Handles the result from the Autocomplete widget.
-     */
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
-            if (resultCode == RESULT_OK) {
-                // Retrieve the selected place
-                Place place = Autocomplete.getPlaceFromIntent(data);
-                Toast.makeText(this, "Place: " + place.getName() + ", " + place.getAddress(), Toast.LENGTH_LONG).show();
-            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
-                // Handle the error
-                Toast.makeText(this, "Error: Could not fetch place details.", Toast.LENGTH_LONG).show();
-            } else if (resultCode == RESULT_CANCELED) {
-                // User canceled the operation
-                Toast.makeText(this, "Autocomplete canceled.", Toast.LENGTH_SHORT).show();
-            }
-        }
     }
 
     @Override
     public boolean onSupportNavigateUp() {
-        // Handle up navigation
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment_activity_main);
         if (navHostFragment != null) {
