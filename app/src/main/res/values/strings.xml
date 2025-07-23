@@ -4,5 +4,5 @@
     <string name="title_delivery">Delivery</string>
     <string name="title_scanner">Scanner</string>
     <string name="title_sign_in">Sign In</string>
-    <string name="google_maps_key">AIzaSyCym8qS83CDhwqncpPCZBtUc9YYlpmM54M</string>
+    <string name="google_maps_key">GoogleApi</string>
 </resources>
